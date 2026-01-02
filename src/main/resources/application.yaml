@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: {{url}}
+    hibernate:
+      ddl-auto: update
+    show-sql: true
