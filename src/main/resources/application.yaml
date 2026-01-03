@@ -1,6 +1,7 @@
 spring:
   datasource:
-    url: {{url}}
+    url: {{ url }}
+  jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update   # use update during dev, validate in prod
     show-sql: true
