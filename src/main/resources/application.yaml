@@ -3,5 +3,15 @@ spring:
     url: {{ url }}
   jpa:
     hibernate:
-      ddl-auto: update   # use update during dev, validate in prod
+      ddl-auto: update
     show-sql: true
+server:
+  port: 8080
+  servlet:
+    context-path: /access-hub
+
+
+jwt:
+  secret: {{secretKey}}
+  expiration: 120000
+  refreshTokenExpiration: 86400000
