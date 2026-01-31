@@ -1,7 +1,11 @@
 package com.priyanka.accesshub.controller;
 
-import com.priyanka.accesshub.dto.*;
-import com.priyanka.accesshub.entity.User;
+import com.priyanka.accesshub.dto.request.LoginDTO;
+import com.priyanka.accesshub.dto.request.RefreshRequest;
+import com.priyanka.accesshub.dto.request.RegisterDTO;
+import com.priyanka.accesshub.dto.response.ErrorResponse;
+import com.priyanka.accesshub.dto.response.LoginResponse;
+import com.priyanka.accesshub.dto.response.RegisterResponse;
 import com.priyanka.accesshub.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,10 +27,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    ResponseEntity<RegisterResponse> register(@RequestBody UserDTO user) {
+    ResponseEntity<RegisterResponse> register(@RequestBody RegisterDTO request) {
 
       try {
-           String message = authService.register(user.getUserName(),user.getPassword());
+           String message = authService.register(request);
           return ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResponse(message));
 
       } catch(IllegalArgumentException e) {
@@ -37,10 +41,10 @@ public class AuthController {
 
     }
     @PostMapping("/login")
-   public ResponseEntity<?> login(@RequestBody User user){
+   public ResponseEntity<?> login(@RequestBody LoginDTO request){
 
        try {
-           LoginResponse loginResponse =  authService.login(user.getUserName(),user.getPassword());
+           LoginResponse loginResponse =  authService.login(request);
            return ResponseEntity.ok(loginResponse);
        } catch(IllegalArgumentException e) {
 
@@ -54,7 +58,7 @@ public class AuthController {
     public ResponseEntity<?> refresh(@RequestBody RefreshRequest request) {
 
          try{
-                LoginResponse loginResponse = authService.refresh(request.getRefreshToken());
+                LoginResponse loginResponse = authService.refresh(request);
                 return ResponseEntity.ok(loginResponse);
          }catch(IllegalArgumentException e) {
              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(e.getMessage()));

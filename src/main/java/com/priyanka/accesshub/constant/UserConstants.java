@@ -1,5 +1,7 @@
 package com.priyanka.accesshub.constant;
 
+import org.springframework.beans.factory.annotation.Value;
+
 public interface UserConstants {
     String ERROR_MSG = "Username already exist";
     String SUCCESS_MSG = "User registered successfully";
@@ -10,6 +12,5 @@ public interface UserConstants {
 
 
     String BEARER = "Bearer";
-    Integer EXPIRES_IN = 120;
 
 }
