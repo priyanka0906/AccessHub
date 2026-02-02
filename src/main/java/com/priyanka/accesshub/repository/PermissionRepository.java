@@ -1,11 +1,11 @@
 package com.priyanka.accesshub.repository;
 
 import com.priyanka.accesshub.entity.Permission;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
 
-import java.util.List;
 
-public interface PermissionRepository extends JpaRepository<Permission,Long> {
+public interface PermissionRepository extends ReactiveCrudRepository<Permission,Long> {
 
-    List<Permission>findAllByClientId(String clientId);
+    Flux<Permission> findAllByClientId(String clientId);
 }

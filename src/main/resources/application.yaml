@@ -1,17 +1,27 @@
 spring:
-  datasource:
-    url: {{ url }}
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+  r2dbc:
+    url: { url }
+    host: { host }
+    port: { port }
+    username: { username }
+    password: { password }
+    database: { database }
+  sql:
+    init:
+      mode: always
+      platform: postgresql
+  webflux:
+   base-path: /access-hub
 server:
   port: 8080
-  servlet:
-    context-path: /access-hub
+
+logging:
+  level:
+    org.springframework.data.r2dbc: DEBUG
+    io.r2dbc.postgresql: DEBUG
 
 
 jwt:
-  secret: {{secretKey}}
+  secret: { key }
   expiration: 120000
   refreshTokenExpiration: 86400000

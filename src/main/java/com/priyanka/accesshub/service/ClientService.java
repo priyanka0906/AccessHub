@@ -8,6 +8,12 @@ import com.priyanka.accesshub.mapper.ClientMapper;
 import com.priyanka.accesshub.repository.ClientRepository;
 import com.priyanka.accesshub.repository.RoleRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
+
+import static com.priyanka.accesshub.constant.UserConstants.ADMIN;
+import static com.priyanka.accesshub.constant.UserConstants.USER;
+
 
 @Service
 public class ClientService {
@@ -23,31 +29,39 @@ public class ClientService {
         this.clientMapper = clientMapper;
     }
 
-    public ClientResponse onboardClient(ClientDTO request) {
+    @Transactional
+    public Mono<ClientResponse> onboardClient(ClientDTO request) {
         Client client = clientMapper.toClientEntity(request);
-        Client savedClient = clientRepository.save(client);
-
-        // seedDefaultRoles for this client
-        seedDefaultRoles(savedClient.getClientId());
-
-        return clientMapper.toClientResponse(savedClient);
+        return clientRepository.save(client)
+                .flatMap(response->
+                        seedDefaultRoles(response.getClientId())
+                                .thenReturn(response)
+                        )
+                .map(clientMapper::toClientResponse);
 
     }
 
     // creating default roles --> User and Admin fo that client
-    private void seedDefaultRoles(String clientId) {
-        if(roleRepository.findByRoleNameAndClientId("USER",clientId).isEmpty()){
-            Role userRole = Role.builder().roleName("USER")
-                    .clientId(clientId)
-                    .build();
+    @Transactional
+    private Mono<Void> seedDefaultRoles(String clientId) {
+       Mono<Role> userRoleMono = roleRepository.findByRoleNameAndClientId(USER, clientId)
+               .switchIfEmpty(
+                       roleRepository.save(
+                               Role.builder().roleName(USER)
+                                       .clientId(clientId)
+                                       .build()
+                       )
+               );
+        Mono<Role> adminRoleMono = roleRepository.findByRoleNameAndClientId(ADMIN, clientId)
+                .switchIfEmpty(
+                        roleRepository.save(
+                                Role.builder().roleName(ADMIN)
+                                        .clientId(clientId)
+                                        .build()
+                        )
+                );
 
-            roleRepository.save(userRole);
-        }
-        if(roleRepository.findByRoleNameAndClientId("ADMIN",clientId).isEmpty()){
-            Role userRole = Role.builder().roleName("ADMIN")
-                    .clientId(clientId)
-                    .build();
-            roleRepository.save(userRole);
-        }
+        return Mono.when(userRoleMono,adminRoleMono).then();
+
     }
 }

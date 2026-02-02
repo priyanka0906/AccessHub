@@ -4,7 +4,6 @@ import com.priyanka.accesshub.dto.request.LoginDTO;
 import com.priyanka.accesshub.dto.request.RefreshRequest;
 import com.priyanka.accesshub.dto.request.RegisterDTO;
 import com.priyanka.accesshub.dto.response.ErrorResponse;
-import com.priyanka.accesshub.dto.response.LoginResponse;
 import com.priyanka.accesshub.dto.response.RegisterResponse;
 import com.priyanka.accesshub.service.AuthService;
 import org.springframework.http.HttpStatus;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 
 @RestController
@@ -27,44 +27,31 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    ResponseEntity<RegisterResponse> register(@RequestBody RegisterDTO request) {
+    Mono<ResponseEntity<RegisterResponse>> register(@RequestBody RegisterDTO request) {
 
-      try {
-           String message = authService.register(request);
-          return ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResponse(message));
-
-      } catch(IllegalArgumentException e) {
-
-          return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RegisterResponse(e.getMessage()));
-      }catch (RuntimeException e) {
-          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new RegisterResponse(e.getMessage())); }
-
+    return authService.register(request)
+             .map(message-> ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResponse(message)))
+             .onErrorResume(IllegalArgumentException.class,e->Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new RegisterResponse(e.getMessage()))))
+             .onErrorResume(RuntimeException.class, e -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) .body(new RegisterResponse(e.getMessage()))));
     }
     @PostMapping("/login")
-   public ResponseEntity<?> login(@RequestBody LoginDTO request){
+   public Mono<ResponseEntity<Object>> login(@RequestBody LoginDTO request){
 
-       try {
-           LoginResponse loginResponse =  authService.login(request);
-           return ResponseEntity.ok(loginResponse);
-       } catch(IllegalArgumentException e) {
-
-           return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(e.getMessage()));
-
-        }
+     return authService.login(request)
+             .map(loginResponse-> ResponseEntity.ok((Object)loginResponse))
+             .onErrorResume(IllegalArgumentException.class,
+                     e->Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                             .body((Object) new ErrorResponse(e.getMessage()))));
 
 
     }
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody RefreshRequest request) {
+    public Mono<ResponseEntity<Object>> refresh(@RequestBody RefreshRequest request) {
+      return authService.refresh(request)
+              .map(refreshResponse->ResponseEntity.ok((Object)refreshResponse))
+              .onErrorResume(IllegalArgumentException.class,
+                      e->Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                              .body((Object) new ErrorResponse(e.getMessage()))));
 
-         try{
-                LoginResponse loginResponse = authService.refresh(request);
-                return ResponseEntity.ok(loginResponse);
-         }catch(IllegalArgumentException e) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(e.getMessage()));
-
-        }
     }
-
-
 }

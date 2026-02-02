@@ -9,8 +9,12 @@ import com.priyanka.accesshub.service.ClientService;
 import com.priyanka.accesshub.service.PermissionService;
 import com.priyanka.accesshub.service.RoleService;
 import com.priyanka.accesshub.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -32,22 +36,39 @@ public class ClientController {
 
     // Onboard a new Client
     @PostMapping
-    public ResponseEntity<ClientResponse> onboardClient(@RequestBody ClientDTO request){
+    public Mono<ResponseEntity<ClientResponse>> onboardClient(@RequestBody ClientDTO request){
 
-        return ResponseEntity.ok(clientService.onboardClient(request));
+        return clientService.onboardClient(request)
+                .map(ResponseEntity::ok);
     }
 
+    @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/users")
-    public ResponseEntity<List<UserResponse>> getAllUsers(@PathVariable String clientId){
-        return ResponseEntity.ok(userService.getAllUsers(clientId));
+    public Flux<ResponseEntity<UserResponse>> getAllUsers(@PathVariable String clientId){
+        return userService.getAllUsers(clientId)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e ->
+                        Flux.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
     }
 
+    @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/roles")
-    public ResponseEntity<List<RoleResponse>> getAllRole(@PathVariable String clientId) {
-        return ResponseEntity.ok(roleService.getAllRoles(clientId)); }
+    public Flux<ResponseEntity<RoleResponse>> getAllRole(@PathVariable String clientId) {
+        return roleService.getAllRoles(clientId)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e ->
+                        Flux.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
 
+    }
+
+    @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/permissions")
-    public ResponseEntity<List<PermissionResponse>> getAllPermissions(@PathVariable String clientId){
-        return ResponseEntity.ok(permissionService.getAllPermissions(clientId));
+    public Mono<ResponseEntity<List<PermissionResponse>>> getAllPermissions(@PathVariable String clientId){
+        return permissionService.getAllPermissions(clientId)
+                .collectList()
+                .map(ResponseEntity::ok)
+                .onErrorResume(e ->
+                        Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
+
     }
 }

@@ -1,14 +1,15 @@
 package com.priyanka.accesshub.controller;
 
-import com.priyanka.accesshub.dto.response.RoleResponse;
 import com.priyanka.accesshub.dto.response.UserResponse;
 import com.priyanka.accesshub.service.RoleService;
 import com.priyanka.accesshub.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -24,20 +25,32 @@ public class UserController {
         this.userService = userService;
     }
 
+    @PreAuthorize("#clientId == authentication.principal.clientId")
     @PostMapping("/{userId}")
-    public ResponseEntity<UserResponse> assignRole(@PathVariable UUID userId, @RequestBody List<Long> roleIds){
+    public Mono<ResponseEntity<UserResponse>> assignRole(@PathVariable UUID userId, @RequestBody List<Long> roleIds){
 
-        return ResponseEntity.ok(roleService.assignRolesToUser(userId,roleIds));
+        return roleService.assignRolesToUser(userId,roleIds)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e-> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST) .body(null)));
+
     }
 
+    @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{userId}")
-    public ResponseEntity<UserResponse> getUserRoles(@PathVariable UUID userId){
-        return ResponseEntity.ok(userService.getUserById(userId));
+    public Mono<ResponseEntity<UserResponse>> getUserRoles(@PathVariable UUID userId){
+        return userService.getUserById(userId)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e-> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST) .body(null)));
+
     }
 
+    @PreAuthorize("#clientId == authentication.principal.clientId")
    @GetMapping("/{clientId}/{userName}")
-    public ResponseEntity<UserResponse> getUser(@PathVariable String clientId, @PathVariable String userName){
-        return ResponseEntity.ok(userService.getUserByName(clientId,userName));
+    public Mono<ResponseEntity<UserResponse>> getUser(@PathVariable String clientId, @PathVariable String userName){
+        return userService.getUserByName(clientId,userName)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e-> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST) .body(null)));
+
    }
 
 

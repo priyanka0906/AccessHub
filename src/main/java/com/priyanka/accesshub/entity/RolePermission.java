@@ -10,22 +10,19 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
-
+@Table("role_permissions")
 @Data
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "client")
-public class Client {
+@AllArgsConstructor
+@Builder
+public class RolePermission {
 
     @Id
-    @Column("id")
     private UUID id;
 
-    @Column("name")
-    private String name;
+    @Column("role_id")
+    private Long roleId;
 
-    @Column("client_id")
-    private String clientId;
-
+    @Column("permissions_id")
+    private Long permissionId;
 }

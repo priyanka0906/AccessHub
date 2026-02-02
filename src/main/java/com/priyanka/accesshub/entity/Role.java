@@ -1,14 +1,13 @@
 package com.priyanka.accesshub.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,18 +17,14 @@ import java.util.Set;
 public class Role {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column("id")
     private Long id;
 
-    @Column
+    @Column("role_name")
     private String roleName;
 
-    @Column
+    @Column("client_id")
     private String clientId;
-
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<Permission>permissions = new HashSet<>();
 
 
 }

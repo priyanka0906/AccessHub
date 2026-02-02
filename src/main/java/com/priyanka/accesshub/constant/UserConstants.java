@@ -12,5 +12,7 @@ public interface UserConstants {
 
 
     String BEARER = "Bearer";
+    String USER = "USER";
+    String ADMIN = "ADMIN";
 
 }

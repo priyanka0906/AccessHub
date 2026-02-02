@@ -5,10 +5,12 @@ import com.priyanka.accesshub.dto.response.PermissionResponse;
 import com.priyanka.accesshub.entity.Permission;
 import com.priyanka.accesshub.mapper.PermissionMapper;
 import com.priyanka.accesshub.repository.PermissionRepository;
-import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 
 @Service
 public class PermissionService {
@@ -20,22 +22,25 @@ public class PermissionService {
         this.permissionMapper = permissionMapper;
     }
 
-
-    public PermissionResponse createPermission(PermissionRequest request){
+    @Transactional
+    public Mono<PermissionResponse> createPermission(PermissionRequest request){
         Permission permissionEntity = permissionMapper.toPermissionEntity(request);
-        Permission response =  permissionRepository.save(permissionEntity);
-        return permissionMapper.toPermissionResponse(response);
+        return  permissionRepository.save(permissionEntity)
+                .map(permissionMapper::toPermissionResponse)
+               .onErrorMap(e -> new RuntimeException("Error while creating permission: " + e.getMessage(), e));
+
     }
 
-    public PermissionResponse getPermission(Long permissionId) {
-        Permission permission =  permissionRepository.findById(permissionId).orElseThrow();
+    public Mono<PermissionResponse> getPermission(Long permissionId) {
+        return permissionRepository.findById(permissionId)
+                .switchIfEmpty(Mono.error(new RuntimeException("Permission not found")))
+                .map(permissionMapper::toPermissionResponse);
 
-        return permissionMapper.toPermissionResponse(permission);
     }
 
-    public @Nullable List<PermissionResponse> getAllPermissions(String clientId) {
-        List<Permission> response = permissionRepository.findAllByClientId(clientId);
-        return response.stream().map(permissionMapper::toPermissionResponse
-        ).toList();
+    public Flux<PermissionResponse> getAllPermissions(String clientId) {
+        return permissionRepository.findAllByClientId(clientId)
+                .map(permissionMapper::toPermissionResponse)
+                .switchIfEmpty(Flux.empty());
     }
 }

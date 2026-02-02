@@ -1,23 +1,24 @@
 package com.priyanka.accesshub.security;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import com.priyanka.accesshub.dto.internal.UserPrincipal;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter implements WebFilter {
 
     private final JwtUtil jwtUtil;
 
@@ -26,38 +27,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        String authHeader = request.getHeader("Authorization");
-        if(authHeader == null || !authHeader.startsWith("Bearer ")){
-         filterChain.doFilter(request,response);
-            return;
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return chain.filter(exchange);
         }
 
         String token = authHeader.substring(7);
-        try{
-            if(!jwtUtil.isTokenExpired(token)){
+        try {
+            if (!jwtUtil.isTokenExpired(token)) {
                 String userName = jwtUtil.extractUsername(token);
                 String clientId = jwtUtil.extractClientId(token);
                 Set<String> roles = jwtUtil.extractRoles(token);
-                Set<String>permissions = jwtUtil.extractPermissions(token);
+                Set<String> permissions = jwtUtil.extractPermissions(token);
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
-                roles.forEach(role->authorities.add(new SimpleGrantedAuthority("ROLE_"+role)));
+                roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));
                 permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userName,null,authorities);
-                authentication.setDetails(clientId);
+                // Use custom principal instead of setDetails
+                UserPrincipal principal = new UserPrincipal(userName, clientId);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                Authentication authentication =
+                        new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
+                // Attach authentication to the reactive security context
+                return chain.filter(exchange)
+                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
             }
-        } catch (Exception ex){
-            SecurityContextHolder.clearContext();
+        } catch (Exception ex) {
+            // clear context by not attaching anything
         }
 
-            filterChain.doFilter(request,response);
+        return chain.filter(exchange);
     }
 }
+

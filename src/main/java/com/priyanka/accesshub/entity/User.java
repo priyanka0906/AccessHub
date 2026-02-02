@@ -1,10 +1,12 @@
 package com.priyanka.accesshub.entity;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 
 import java.time.OffsetDateTime;
@@ -12,7 +14,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-@Entity
 @Data
 @Builder
 @AllArgsConstructor
@@ -20,35 +21,19 @@ import java.util.UUID;
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue
-    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
+    @Column("id")
     private UUID id;
 
-    @Column
+    @Column("client_id")
     private String clientId;
 
-    @Column(unique = true, nullable = false)
+    @Column("user_name")
     private String userName;
 
-    @Column(nullable = false)
+    @Column("password")
     private String password;
 
-    @Column
+    @Column("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    private Set<Role> roles = new HashSet<>();
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) {
-            createdAt = OffsetDateTime.now();
-        }
-    }
-    public Set<Role> getRoles() {
-        if (roles == null) {
-            roles = new HashSet<>();
-        }
-        return roles;
-    }
 }
