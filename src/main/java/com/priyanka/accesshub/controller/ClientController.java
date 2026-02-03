@@ -9,6 +9,10 @@ import com.priyanka.accesshub.service.ClientService;
 import com.priyanka.accesshub.service.PermissionService;
 import com.priyanka.accesshub.service.RoleService;
 import com.priyanka.accesshub.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/client")
+@Tag(name = "Client Management", description = "Endpoints for onboarding clients and managing users, roles, and permissions")
 public class ClientController {
 
     private final ClientService clientService;
@@ -34,41 +39,63 @@ public class ClientController {
         this.userService = userService;
     }
 
-    // Onboard a new Client
+    @Operation(summary = "Onboard a new client", description = "Registers a new client in the system")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Client onboarded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid client data"),
+            @ApiResponse(responseCode = "500", description = "Server error")
+    })
     @PostMapping
-    public Mono<ResponseEntity<ClientResponse>> onboardClient(@RequestBody ClientDTO request){
-
+    public Mono<ResponseEntity<ClientResponse>> onboardClient(@RequestBody ClientDTO request) {
         return clientService.onboardClient(request)
                 .map(ResponseEntity::ok);
     }
 
+    @Operation(summary = "Get all users for a client", description = "Retrieves all users associated with the given clientId")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "500", description = "Server error")
+    })
     @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/users")
-    public Flux<ResponseEntity<UserResponse>> getAllUsers(@PathVariable String clientId){
+    public Mono<ResponseEntity<List<UserResponse>>> getAllUsers(@PathVariable String clientId) {
         return userService.getAllUsers(clientId)
+                .collectList()
                 .map(ResponseEntity::ok)
                 .onErrorResume(e ->
-                        Flux.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
+                        Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
     }
 
+    @Operation(summary = "Get all roles for a client", description = "Retrieves all roles associated with the given clientId")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Roles retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "500", description = "Server error")
+    })
     @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/roles")
-    public Flux<ResponseEntity<RoleResponse>> getAllRole(@PathVariable String clientId) {
+    public Mono<ResponseEntity<List<RoleResponse>>> getAllRole(@PathVariable String clientId) {
         return roleService.getAllRoles(clientId)
+                .collectList()
                 .map(ResponseEntity::ok)
                 .onErrorResume(e ->
-                        Flux.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
-
+                        Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
     }
 
+    @Operation(summary = "Get all permissions for a client", description = "Retrieves all permissions associated with the given clientId")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Permissions retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "500", description = "Server error")
+    })
     @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/permissions")
-    public Mono<ResponseEntity<List<PermissionResponse>>> getAllPermissions(@PathVariable String clientId){
+    public Mono<ResponseEntity<List<PermissionResponse>>> getAllPermissions(@PathVariable String clientId) {
         return permissionService.getAllPermissions(clientId)
                 .collectList()
                 .map(ResponseEntity::ok)
                 .onErrorResume(e ->
                         Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
-
     }
 }
