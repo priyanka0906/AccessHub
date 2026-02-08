@@ -28,6 +28,7 @@ public class RoleController {
             @ApiResponse(responseCode = "201", description = "Role created successfully"),
             @ApiResponse(responseCode = "500", description = "Server error")
     })
+    @PreAuthorize("#request.getClientId == authentication.principal.clientId")
     @PostMapping
     public Mono<ResponseEntity<RoleResponse>> createRole(@RequestBody RoleRequest request) {
         return roleService.createRole(request)
@@ -44,7 +45,7 @@ public class RoleController {
     @PreAuthorize("#clientId == authentication.principal.clientId")
     @GetMapping("/{clientId}/{roleId}")
     public Mono<ResponseEntity<RoleResponse>> getRole(@PathVariable String clientId, @PathVariable Long roleId) {
-        return roleService.getRole(roleId)
+        return roleService.getRole(roleId, clientId)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)));
     }

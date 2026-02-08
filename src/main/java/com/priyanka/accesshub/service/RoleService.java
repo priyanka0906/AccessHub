@@ -1,5 +1,7 @@
 package com.priyanka.accesshub.service;
 
+import com.priyanka.accesshub.dto.request.PermissionIdDTO;
+import com.priyanka.accesshub.dto.request.RoleIdDTO;
 import com.priyanka.accesshub.dto.request.RoleRequest;
 import com.priyanka.accesshub.dto.response.RoleResponse;
 import com.priyanka.accesshub.dto.response.UserResponse;
@@ -44,13 +46,13 @@ public class RoleService {
      }
 
 
-    public Mono<UserResponse> assignRolesToUser(UUID userId, List<Long> roleIds) {
-        return userRepository.findById(userId)
+    public Mono<UserResponse> assignRolesToUser(String clientId,UUID userId, RoleIdDTO request) {
+        return userRepository.findByIdAndClientId(userId,clientId)
                 .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
                 .flatMap(user->
-                    roleRepository.findAllById(roleIds).collect(Collectors.toSet())
+                    roleRepository.findAllById(request.getRoleIds()).collect(Collectors.toSet())
                             .flatMap(roles-> {
-                                if(roles.size()!=roleIds.size()){
+                                if(roles.size()!=request.getRoleIds().size()){
                                     return Mono.error(new RuntimeException("One or more role IDs are invalid"));
                                 }
                                 return Flux.fromIterable(roles)
@@ -99,13 +101,13 @@ public class RoleService {
      }
 
      @Transactional
-    public Mono<RoleResponse> assignPermissionsToRole(Long roleId, List<Long> permissionIds) {
-        return roleRepository.findById(roleId)
+    public Mono<RoleResponse> assignPermissionsToRole(Long roleId, PermissionIdDTO request,String clientId) {
+        return roleRepository.findByIdAndClientId(roleId, clientId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Role not found")))
                 .flatMap(role->
-                        permissionRepository.findAllById(permissionIds).collect(Collectors.toSet())
+                        permissionRepository.findAllByIdInAndClientId(request.getPermissionIds(),clientId).collect(Collectors.toSet())
                                 .flatMap(permissions -> {
-                                    if(permissions.size()!=permissionIds.size())
+                                    if(permissions.size()!=request.getPermissionIds().size())
                                         return Mono.error(new RuntimeException("One or more permission IDs are invalid"));
                                    return Flux.fromIterable(permissions)
                                            .flatMap(permission -> rolePermissionRepository.save(
@@ -122,9 +124,9 @@ public class RoleService {
     }
 
 
-    public Mono<RoleResponse> getRole(Long roleId) {
+    public Mono<RoleResponse> getRole(Long roleId,String clientId) {
 
-        return roleRepository.findById(roleId)
+        return roleRepository.findByIdAndClientId(roleId, clientId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Role not found")))
                 .flatMap(role->
                         rolePermissionRepository.findByRoleId(role.getId())

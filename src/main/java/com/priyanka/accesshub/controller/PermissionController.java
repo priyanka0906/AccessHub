@@ -1,5 +1,6 @@
 package com.priyanka.accesshub.controller;
 
+import com.priyanka.accesshub.dto.request.PermissionIdDTO;
 import com.priyanka.accesshub.dto.request.PermissionRequest;
 import com.priyanka.accesshub.dto.response.PermissionResponse;
 import com.priyanka.accesshub.dto.response.RoleResponse;
@@ -11,10 +12,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/permissions")
@@ -46,11 +46,13 @@ public class PermissionController {
             @ApiResponse(responseCode = "200", description = "Permissions assigned successfully"),
             @ApiResponse(responseCode = "500", description = "Server error")
     })
-    @PostMapping("/{roleId}")
+    @PreAuthorize("#clientId == authentication.principal.clientId")
+    @PostMapping("/{clientId}/{roleId}")
     public Mono<ResponseEntity<RoleResponse>> assignPermissions(
             @PathVariable Long roleId,
-            @RequestBody List<Long> permissionIds) {
-        return roleService.assignPermissionsToRole(roleId, permissionIds)
+            @PathVariable String clientId,
+            @RequestBody PermissionIdDTO permissionIds) {
+        return roleService.assignPermissionsToRole(roleId,permissionIds,clientId )
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
     }
@@ -61,9 +63,10 @@ public class PermissionController {
             @ApiResponse(responseCode = "404", description = "Permission not found"),
             @ApiResponse(responseCode = "500", description = "Server error")
     })
-    @GetMapping("/{permissionId}")
-    public Mono<ResponseEntity<PermissionResponse>> getPermission(@PathVariable Long permissionId){
-        return permissionService.getPermission(permissionId)
+    @PreAuthorize("#clientId == authentication.principal.clientId")
+    @GetMapping("/{clientId}/{permissionId}")
+    public Mono<ResponseEntity<PermissionResponse>> getPermission(@PathVariable String clientId, @PathVariable Long permissionId){
+        return permissionService.getPermission(permissionId,clientId)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null)));
     }

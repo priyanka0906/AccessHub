@@ -1,5 +1,6 @@
 package com.priyanka.accesshub.controller;
 
+import com.priyanka.accesshub.dto.request.RoleIdDTO;
 import com.priyanka.accesshub.dto.response.UserResponse;
 import com.priyanka.accesshub.service.RoleService;
 import com.priyanka.accesshub.service.UserService;
@@ -36,11 +37,12 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @PreAuthorize("#clientId == authentication.principal.clientId")
-    @PostMapping("/{userId}")
+    @PostMapping("/{clientId}/{userId}")
     public Mono<ResponseEntity<UserResponse>> assignRole(
             @PathVariable UUID userId,
-            @RequestBody List<Long> roleIds) {
-        return roleService.assignRolesToUser(userId, roleIds)
+            @PathVariable String clientId,
+            @RequestBody RoleIdDTO roleIds) {
+        return roleService.assignRolesToUser(clientId,userId, roleIds)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null)));
     }
@@ -52,9 +54,9 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @PreAuthorize("#clientId == authentication.principal.clientId")
-    @GetMapping("/{userId}")
-    public Mono<ResponseEntity<UserResponse>> getUserRoles(@PathVariable UUID userId) {
-        return userService.getUserById(userId)
+    @GetMapping("{clientId}/userId/{userId}")
+    public Mono<ResponseEntity<UserResponse>> getUserRoles(@PathVariable String clientId,@PathVariable UUID userId) {
+        return userService.getUserById(userId,clientId)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null)));
     }
@@ -66,7 +68,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @PreAuthorize("#clientId == authentication.principal.clientId")
-    @GetMapping("/{clientId}/{userName}")
+    @GetMapping("/{clientId}/userName/{userName}")
     public Mono<ResponseEntity<UserResponse>> getUser(
             @PathVariable String clientId,
             @PathVariable String userName) {

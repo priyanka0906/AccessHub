@@ -31,8 +31,8 @@ public class PermissionService {
 
     }
 
-    public Mono<PermissionResponse> getPermission(Long permissionId) {
-        return permissionRepository.findById(permissionId)
+    public Mono<PermissionResponse> getPermission(Long permissionId,String clientId) {
+        return permissionRepository.findByIdAndClientId(permissionId, clientId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Permission not found")))
                 .map(permissionMapper::toPermissionResponse);
 

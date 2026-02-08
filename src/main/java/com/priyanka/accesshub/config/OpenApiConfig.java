@@ -21,7 +21,8 @@ public class OpenApiConfig {
                         .title("AccessHub API")
                         .version("1.0")
                         .description("API documentation for AccessHub project"))
-                .servers(List.of(new Server().url("http://localhost:8080/access-hub").description("local")))
+                .servers(List.of(new Server().url("http://localhost:8080/access-hub").description("local"),
+                                  new Server().url("https://accesshub-2sbi.onrender.com/access-hub").description("deployed")))
 
                 // Add a global security requirement
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))

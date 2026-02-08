@@ -78,8 +78,8 @@ public class UserService {
                 );
     }
 
-    public Mono<UserResponse> getUserById(UUID userId) {
-        return userRepository.findById(userId)
+    public Mono<UserResponse> getUserById(UUID userId,String clientId) {
+        return userRepository.findByIdAndClientId(userId,clientId)
                 .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
                 .flatMap(user ->
                         userRoleRepository.findByUserId(user.getId())

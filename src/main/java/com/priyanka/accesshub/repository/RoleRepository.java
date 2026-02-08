@@ -9,7 +9,8 @@ import reactor.core.publisher.Mono;
 public interface RoleRepository extends ReactiveCrudRepository<Role,Long> {
 
   Mono<Role> findByRoleNameAndClientId(String roleName, String clientId);
-
+  Mono<Role> findByIdAndClientId(Long id, String clientId) ;
   Flux<Role>findAllByClientId(String clientId);
+
 
 }
